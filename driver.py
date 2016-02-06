@@ -5,4 +5,4 @@ nn.initTheanoFunctions()
 nn.readTrainingData("data.txt")
 
 nn.generateWeights()
-nn.runFeedForward()
+nn.runFeedForward([[1,0]])

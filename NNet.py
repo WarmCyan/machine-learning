@@ -5,7 +5,6 @@ import numpy
 print "(Imports complete!)"
 
 # NOTE: For now, weights will be randomly initialized
-#I changed something!
 
 class NeuralNetwork():
 	
@@ -18,6 +17,10 @@ class NeuralNetwork():
 	layers = 0
 	layerNeuronCount = 0
 	outputs = 0
+
+	# necessary training variables
+	netOutput = 0;
+	
 	
 	# construction
 	def __init__(self, inpNum, hiddenLayerNum, hiddenLayerNeurons, outNum):
@@ -27,7 +30,6 @@ class NeuralNetwork():
 		self.layerNeuronCount = hiddenLayerNeurons
 		self.outputs = outNum
 		
-
 	# setup and compile the necessary theano functions
 	def initTheanoFunctions(self):
 		print "(Compiling theano functions...)"
@@ -70,36 +72,33 @@ class NeuralNetwork():
 		
 		# input to first hidden layer (inputs x hiddenLayerNodes)
 		weights_in_hidden = numpy.random.rand(self.inputs, self.layerNeuronCount)
+		weights_in_hidden = weights_in_hidden#*2 - 1 # normalize weights (-1,1)
 		self.weights.append(weights_in_hidden)
 		
 		for i in range(0,self.layers - 1): # input
 			weights_hidden_hidden = numpy.random.rand(self.layerNeuronCount, self.layerNeuronCount)
+			weights_hidden_hidden = weights_hidden_hidden#*2 - 1 # normalize weights (-1,1)
 			self.weights.append(weights_hidden_hidden)
 
 		# final hidden to output layer (hiddenLayerNodes x outputs)
 		weights_hidden_out = numpy.random.rand(self.layerNeuronCount, self.outputs)
+		weights_hidden_out = weights_hidden_out#*2 - 1 # normalize weights (-1,1)
 		self.weights.append(weights_hidden_out)
 
 		for i in range(0, len(self.weights)):
 			print self.weights[i]
 
-	def runFeedForward(self):
+	# runs single input through
+	def runFeedForward(self, inputArray):
 		# run first feedforward
-		#self.feedForward([trainingInputs, weights[0]
 
 		#for i in range(0, len(self.trainingInputs)):
 			#print self.trainingInputs[i]
-			
 
-		#currentIn = trainingInputs
-		currentIn = self.trainingInputs[0]
-		#print currentIn
-		#outthing = self.feedForward(currentIn, self.weights[0])
-		#outthing = self.feedForward([[10,5]], self.weights[0])
-		#print outthing
+		#currentIn = self.trainingInputs[0] # USED THIS ONE
+		currentIn = inputArray
 
 		# input and hidden layers
-		#for i in range(0, self.layers - 2):
 		print "---------"
 		for i in range(0, len(self.weights)-1):
 			currentWeights = self.weights[i]
@@ -107,12 +106,8 @@ class NeuralNetwork():
 			print currentIn
 
 		# final layer
-		#output = self.feedForward(currentIn, self.weights[self.layers - 1])
-		
-		
 		output = self.feedForward(currentIn, self.weights[len(self.weights) - 1])
 		
-		
-		#output = self.feedForward(currentIn, self.weights[0])
 		print "---------"
 		print output
+		
