@@ -26,6 +26,7 @@ class NeuralNetwork():
 	
 	# saved data from feed forward for backpropogation
 	#lastLayers = numpy.asarray([[]])
+	run_inputs = []; # this should NOT be run through a logistic, correct?
 	run_layerNodeValues = []; # no sigmoid
 	run_layerNodeResults = []; # AFTER sigmoid (store this so don't have to keep calculating it)
 	run_outputs = 0;
@@ -185,6 +186,23 @@ class NeuralNetwork():
 
 		print "\nStep 2:"
 		print stepTwo
+
+		finalStep = stepOne * stepTwo * self.run_layerNodeResults[-2]
+
+		print "\nFinal affect of weights on error:"
+		print finalStep
+
+
+		# apply final step to weights
+		print "\n\n"
+		print "Old weights:"
+		print self.weights[-1]
+		#print self.weights
+		self.weights[-1] = self.weights[-1] - self.learningRate * finalStep.transpose()
+		
+		print "\nNew weights:"
+		print self.weights[-1]
+		
 		
 		# first do layer of weights
 		#for i in range (0, len(selfweights) - 1):
