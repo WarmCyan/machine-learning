@@ -19,7 +19,14 @@ class NeuralNetwork():
 	outputs = 0
 
 	# necessary training variables
-	netOutput = 0;
+	
+	
+	
+	# saved data from feed forward for backpropogation
+	#lastLayers = numpy.asarray([[]])
+	lastLayers = [];
+	lastOutput = 0;
+	lastOutputTarget = 0;
 	
 	
 	# construction
@@ -34,15 +41,32 @@ class NeuralNetwork():
 	def initTheanoFunctions(self):
 		print "(Compiling theano functions...)"
 
+		# basic node value finding function (prev layer dot weights)
 		mat_incoming = t.dmatrix('mat_incoming') # layer inputs
 		mat_weights = t.dmatrix('mat_weights') # layer connection weights
-		mat_presig = t.dot(mat_incoming, mat_weights) # dot product of inputs with weights (no sigmoid yet)
+		mat_nodeValues = t.dot(mat_incoming, mat_weights) # dot product of inputs with weights (no sigmoid yet) This is first half value of each node
+		
+		self.feedNodes = theano.function([mat_incoming, mat_weights], mat_nodeValues)
+		
+		# sigmoid logistic function
+		mat_incoming = t.dmatrix('mat_incoming')
+		mat_logisticSigmoid = 1 / (1 + t.exp(-mat_incoming))
+		
+		self.logisticSigmoid = theano.function([mat_incoming], mat_logisticSigmoid)
+		
+		
+		
+		
+		
+		
+		#mat_presig = t.dot(mat_incoming, mat_weights) # dot product of inputs with weights (no sigmoid yet)
 
-		mat_outputs = 1 / (1 + t.exp(-mat_presig)) # apply sigmoid
+		#mat_outputs = 1 / (1 + t.exp(-mat_presig)) # apply sigmoid
 
-		self.feedForward = theano.function([mat_incoming, mat_weights], mat_outputs)
+		#self.feedForward = theano.function([mat_incoming, mat_weights], mat_outputs)
 
 		print "(Functions ready!)"
+
 
 	# expects csv file
 	def readTrainingData(self, fileName):
@@ -86,7 +110,7 @@ class NeuralNetwork():
 		self.weights.append(weights_hidden_out)
 
 		for i in range(0, len(self.weights)):
-			print self.weights[i]
+			print "Weights:\n" + str(self.weights[i])
 
 	# runs single input through
 	def runFeedForward(self, inputArray):
@@ -100,14 +124,45 @@ class NeuralNetwork():
 
 		# input and hidden layers
 		print "---------"
-		for i in range(0, len(self.weights)-1):
+		for i in range(0, len(self.weights)):
 			currentWeights = self.weights[i]
-			currentIn = self.feedForward(currentIn, currentWeights)
-			print currentIn
+			currentIn = self.feedNodes(currentIn, currentWeights)
+			#currentIn = self.feedForward(currentIn, currentWeights)
+
+			# TODO: make this cleaner, should be arrays for every step
+			self.lastLayers.append(currentIn)
+			
+			currentIn = self.logisticSigmoid(currentIn);
+
+			if (i == len(self.weights) - 1):
+				self.lastOutput = currentIn
+			
+			print "Layer results:\n" + str(currentIn)
 
 		# final layer
-		output = self.feedForward(currentIn, self.weights[len(self.weights) - 1])
+		#output = self.feedForward(currentIn, self.weights[len(self.weights) - 1])
+		
+		#self.lastOutput = output
 		
 		print "---------"
-		print output
+		print "Net outputs:\n" + str(self.lastOutput)
+
+	# remember, strucuture is 2 3 1	
+		
+	# target array should be same dimension as lastOutput, obviously
+	def backPropogate(self, targetArray):
+		print "Layer node values:\n" + str(self.lastLayers)
+		
+		# first do layer of weights
+		#for i in range (0, len(selfweights) - 1):
+			
+			# d(error) / d(logistic)
+			
+
+	#def logistic(self, input):
+		#print "logistic goes here"
+
+	# DERIVATIVE FUNCTIONS
+	#def dErrorDLogistic(self, error, logistic):
+		# -(goal - 
 		
