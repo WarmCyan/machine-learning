@@ -18,15 +18,18 @@ class NeuralNetwork():
 	layerNeuronCount = 0
 	outputs = 0
 
+	learningRate = 0.5; # (alpha)
+
 	# necessary training variables
 	
 	
 	
 	# saved data from feed forward for backpropogation
 	#lastLayers = numpy.asarray([[]])
-	lastLayers = [];
-	lastOutput = 0;
-	lastOutputTarget = 0;
+	run_layerNodeValues = []; # no sigmoid
+	run_layerNodeResults = []; # AFTER sigmoid (store this so don't have to keep calculating it)
+	run_outputs = 0;
+	run_outputTargets = 0;
 	
 	
 	# construction
@@ -54,15 +57,25 @@ class NeuralNetwork():
 		
 		self.logisticSigmoid = theano.function([mat_incoming], mat_logisticSigmoid)
 		
+		# derivative functions!
 		
-		
-		
-		
+		# d(error) / d(logistic[layerOutput])
+		mat_outputResults = t.dmatrix('mat_outputResults')
+		mat_target = t.dmatrix('mat_target')
+		mat_dErrorDOutputResults = -(mat_target - mat_outputResults)
+
+		self.dErrorDOutputResults = theano.function([mat_outputResults, mat_target], mat_dErrorDOutputResults)
+
+
+		# sigmoid logistic derivative
+		# mat_values = t.dmatrix('mat_values') # not actually needed for drivative of sigmoid!
+		mat_sigmoid = t.dmatrix('mat_sigmoid')
+		mat_dSigmoidDValues = mat_sigmoid * (1 - mat_sigmoid)
+
+		self.dSigmoidDValues = theano.function([mat_sigmoid], mat_dSigmoidDValues)
 		
 		#mat_presig = t.dot(mat_incoming, mat_weights) # dot product of inputs with weights (no sigmoid yet)
-
 		#mat_outputs = 1 / (1 + t.exp(-mat_presig)) # apply sigmoid
-
 		#self.feedForward = theano.function([mat_incoming, mat_weights], mat_outputs)
 
 		print "(Functions ready!)"
@@ -129,15 +142,19 @@ class NeuralNetwork():
 			currentIn = self.feedNodes(currentIn, currentWeights)
 			#currentIn = self.feedForward(currentIn, currentWeights)
 
-			# TODO: make this cleaner, should be arrays for every step
-			self.lastLayers.append(currentIn)
+			self.run_layerNodeValues.append(currentIn)
 			
 			currentIn = self.logisticSigmoid(currentIn);
 
-			if (i == len(self.weights) - 1):
-				self.lastOutput = currentIn
+			self.run_layerNodeResults.append(currentIn)
+
+			#if (i == len(self.weights) - 1):
+				#self.run_outputs = currentIn
 			
 			print "Layer results:\n" + str(currentIn)
+
+		# explicitly assign outputs for ease
+		self.run_outputs = self.run_layerNodeResults[-1]
 
 		# final layer
 		#output = self.feedForward(currentIn, self.weights[len(self.weights) - 1])
@@ -145,13 +162,29 @@ class NeuralNetwork():
 		#self.lastOutput = output
 		
 		print "---------"
-		print "Net outputs:\n" + str(self.lastOutput)
+		print "Net outputs:\n" + str(self.run_outputs)
 
 	# remember, strucuture is 2 3 1	
 		
 	# target array should be same dimension as lastOutput, obviously
 	def backPropogate(self, targetArray):
-		print "Layer node values:\n" + str(self.lastLayers)
+		
+		self.run_outputTargets = targetArray;
+		
+		print "Layer node values:\n" + str(self.run_layerNodeValues)
+		print "Layer node results:\n" + str(self.run_layerNodeResults)
+		
+		print "\n\n"
+
+		stepOne = self.dErrorDOutputResults(self.run_outputs, self.run_outputTargets)
+
+		print "Step 1:"
+		print stepOne
+
+		stepTwo = self.dSigmoidDValues(self.run_outputs)
+
+		print "\nStep 2:"
+		print stepTwo
 		
 		# first do layer of weights
 		#for i in range (0, len(selfweights) - 1):
@@ -165,4 +198,8 @@ class NeuralNetwork():
 	# DERIVATIVE FUNCTIONS
 	#def dErrorDLogistic(self, error, logistic):
 		# -(goal - 
-		
+
+
+
+	# debugging/info functions
+	# (later print net node info HERE, instead of in the functions)
