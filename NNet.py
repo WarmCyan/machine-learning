@@ -130,6 +130,8 @@ class NeuralNetwork():
 	def runFeedForward(self, inputArray):
 		# run first feedforward
 
+		self.run_inputs = numpy.asarray(inputArray)
+
 		#for i in range(0, len(self.trainingInputs)):
 			#print self.trainingInputs[i]
 
@@ -175,7 +177,7 @@ class NeuralNetwork():
 		print "Layer node values:\n" + str(self.run_layerNodeValues)
 		print "Layer node results:\n" + str(self.run_layerNodeResults)
 		
-		print "\n\n"
+		print "\n\n---- Output layer weight adjustment ----"
 
 		stepOne = self.dErrorDOutputResults(self.run_outputs, self.run_outputTargets)
 
@@ -187,37 +189,63 @@ class NeuralNetwork():
 		print "\nStep 2:"
 		print stepTwo
 
-		finalStep = stepOne * stepTwo * self.run_layerNodeResults[-2]
+		stepThree = self.run_layerNodeResults[-2]
+
+		print "\nStep 3:"
+		print stepThree
+
+		finalStep = stepThree.transpose() * (numpy.asarray(stepOne) * numpy.asarray(stepTwo))
 
 		print "\nFinal affect of weights on error:"
 		print finalStep
 
+		#finalStep = stepOne * stepTwo * self.run_layerNodeResults[-2]
+		#print "\n[2] -- Final affect of weights on error:"
+		#print finalStep
 
 		# apply final step to weights
 		print "\n\n"
 		print "Old weights:"
 		print self.weights[-1]
 		#print self.weights
-		self.weights[-1] = self.weights[-1] - self.learningRate * finalStep.transpose()
+		self.weights[-1] = self.weights[-1] - self.learningRate * finalStep
 		
 		print "\nNew weights:"
 		print self.weights[-1]
 		
+
+		print "\n\n---- Input layer weight adjustment ----"
+		stepThree = self.weights[-1]
+	
+		print "(Steps 1-2 same as above)"
+		print "Step 3:"
+		print stepThree
 		
-		# first do layer of weights
-		#for i in range (0, len(selfweights) - 1):
-			
-			# d(error) / d(logistic)
-			
+		stepFour = self.dSigmoidDValues(self.run_layerNodeValues[-2])
 
-	#def logistic(self, input):
-		#print "logistic goes here"
+		print "\nStep 4"
+		print stepFour
 
-	# DERIVATIVE FUNCTIONS
-	#def dErrorDLogistic(self, error, logistic):
-		# -(goal - 
+		stepFive = self.run_inputs
 
+		print "\nStep 5"
+		print stepFive
 
+		finalStep = stepFive.transpose() * numpy.asmatrix(numpy.asarray(stepFour) * numpy.asarray((numpy.asarray(stepOne) * numpy.asarray(stepTwo)) * stepThree.transpose()))
+
+		print "\nFinal affect of weights on error:"
+		print finalStep
+
+		# apply final step to weights
+		print "\n\n"
+		print "Old weights:"
+		print self.weights[-2]
+
+		self.weights[-2] = self.weights[-2] - self.learningRate * finalStep
+		
+		print "\nNew weights:"
+		print self.weights[-2]
+		
 
 	# debugging/info functions
 	# (later print net node info HERE, instead of in the functions)
