@@ -13,12 +13,16 @@ class NeuralNetwork():
 	trainingOutputs = []
 	weights = []
 
+	initialWeights = []
+
+	lastWeights = []
+
 	inputs = 0
 	layers = 0
 	layerNeuronCount = 0
 	outputs = 0
 
-	learningRate = 0.5; # (alpha)
+	learningRate = 2.0; # (alpha)
 
 	# necessary training variables
 	
@@ -30,7 +34,8 @@ class NeuralNetwork():
 	run_layerNodeValues = []; # no sigmoid
 	run_layerNodeResults = []; # AFTER sigmoid (store this so don't have to keep calculating it)
 	run_outputs = 0;
-	run_outputTargets = 0;
+	run_outputTargets = 0;	
+	run_error = 0;
 	
 	
 	# construction
@@ -67,17 +72,14 @@ class NeuralNetwork():
 
 		self.dErrorDOutputResults = theano.function([mat_outputResults, mat_target], mat_dErrorDOutputResults)
 
-
 		# sigmoid logistic derivative
-		# mat_values = t.dmatrix('mat_values') # not actually needed for drivative of sigmoid!
 		mat_sigmoid = t.dmatrix('mat_sigmoid')
-		mat_dSigmoidDValues = mat_sigmoid * (1 - mat_sigmoid)
+		#mat_ones = shared(numpy.ones(t.shape(mat_signmoid)))
+		mat_dSigmoidDValues = numpy.asarray(mat_sigmoid) * numpy.asarray(1 - numpy.asarray(mat_sigmoid))
+		#mat_dSigmoidDValues = mat_sigmoid * (numpy.ones(t.shape(mat_sigmoid)) - mat_sigmoid)
+		#mat_dSigmoidDValues = mat_sigmoid * (1 - 
 
 		self.dSigmoidDValues = theano.function([mat_sigmoid], mat_dSigmoidDValues)
-		
-		#mat_presig = t.dot(mat_incoming, mat_weights) # dot product of inputs with weights (no sigmoid yet)
-		#mat_outputs = 1 / (1 + t.exp(-mat_presig)) # apply sigmoid
-		#self.feedForward = theano.function([mat_incoming, mat_weights], mat_outputs)
 
 		print "(Functions ready!)"
 
@@ -102,8 +104,8 @@ class NeuralNetwork():
 				outputArray = numpy.concatenate((outputArray, [[value]]), 1)
 			self.trainingOutputs.append(outputArray)	
 			
-		# print self.trainingInputs
-		# print self.trainingOutputs
+		#print self.trainingInputs
+		#print self.trainingOutputs
 
 	# TODO: one input to hidden matrix, (amount) hidden to hidden, hidden to out matrix
 	def generateWeights(self):
@@ -125,12 +127,21 @@ class NeuralNetwork():
 
 		for i in range(0, len(self.weights)):
 			print "Weights:\n" + str(self.weights[i])
+		
+		self.initialWeights = list(self.weights)
+
+	# assumes that run_outputs and run_outputTargets are already set
+	def calculateRunError(self):
+		mat_errors = .5 * (numpy.asarray(self.run_outputTargets - self.run_outputs) ** 2)
+		self.run_error = numpy.sum(mat_errors)
 
 	# runs single input through
 	def runFeedForward(self, inputArray):
 		# run first feedforward
 
 		self.run_inputs = numpy.asarray(inputArray)
+		self.run_layerNodeValues = [];
+		self.run_layerNodeResults = [];
 
 		#for i in range(0, len(self.trainingInputs)):
 			#print self.trainingInputs[i]
@@ -139,11 +150,23 @@ class NeuralNetwork():
 		currentIn = inputArray
 
 		# input and hidden layers
-		print "---------"
+		#print "---------"
 		for i in range(0, len(self.weights)):
 			currentWeights = self.weights[i]
+		
+
+			
 			currentIn = self.feedNodes(currentIn, currentWeights)
 			#currentIn = self.feedForward(currentIn, currentWeights)
+			
+			if (numpy.isnan(currentIn).any()):
+				print "CURRENT IN IS NULL RIGHT AFTER FEED NODES!!!! -------------------------"
+				print "weights:"
+				print self.weights
+				print "layernodevalues:"
+				print self.run_layerNodeValues
+				print "LAST weights:"
+				print self.lastWeights
 
 			self.run_layerNodeValues.append(currentIn)
 			
@@ -151,10 +174,17 @@ class NeuralNetwork():
 
 			self.run_layerNodeResults.append(currentIn)
 
+			if (numpy.isnan(currentIn).any()):
+				print "CURRENT IN IS NULL"
+				print "weights:"
+				print self.weights
+				print "layernodevalues:"
+				print self.run_layerNodeValues
+
 			#if (i == len(self.weights) - 1):
 				#self.run_outputs = currentIn
 			
-			print "Layer results:\n" + str(currentIn)
+			#print "Layer results:\n" + str(currentIn)
 
 		# explicitly assign outputs for ease
 		self.run_outputs = self.run_layerNodeResults[-1]
@@ -164,88 +194,151 @@ class NeuralNetwork():
 		
 		#self.lastOutput = output
 		
-		print "---------"
-		print "Net outputs:\n" + str(self.run_outputs)
+		#print "---------"
+		#print "Net outputs:\n" + str(self.run_outputs)
 
 	# remember, strucuture is 2 3 1	
 		
 	# target array should be same dimension as lastOutput, obviously
 	def backPropogate(self, targetArray):
 		
+		self.lastWeights = list(self.weights)
 		self.run_outputTargets = targetArray;
 		
-		print "Layer node values:\n" + str(self.run_layerNodeValues)
-		print "Layer node results:\n" + str(self.run_layerNodeResults)
+		#print "Layer node values:\n" + str(self.run_layerNodeValues)
+		#print "Layer node results:\n" + str(self.run_layerNodeResults)
 		
-		print "\n\n---- Output layer weight adjustment ----"
+		#print "\n\n---- Output layer weight adjustment ----"
 
 		stepOne = self.dErrorDOutputResults(self.run_outputs, self.run_outputTargets)
 
-		print "Step 1:"
-		print stepOne
+		#print "Step 1:"
+		#print stepOne
 
 		stepTwo = self.dSigmoidDValues(self.run_outputs)
 
-		print "\nStep 2:"
-		print stepTwo
+		#print "\nStep 2:"
+		#print stepTwo
 
 		stepThree = self.run_layerNodeResults[-2]
 
-		print "\nStep 3:"
-		print stepThree
+		#print "\nStep 3:"
+		#print stepThree
 
 		finalStep = stepThree.transpose() * (numpy.asarray(stepOne) * numpy.asarray(stepTwo))
 
-		print "\nFinal affect of weights on error:"
-		print finalStep
+		#print "\nFinal affect of weights on error:"
+		#print finalStep
 
 		#finalStep = stepOne * stepTwo * self.run_layerNodeResults[-2]
 		#print "\n[2] -- Final affect of weights on error:"
 		#print finalStep
 
 		# apply final step to weights
-		print "\n\n"
-		print "Old weights:"
-		print self.weights[-1]
+		#print "\n\n"
+		#print "Old weights:"
+		#print self.weights[-1]
 		#print self.weights
+
 		self.weights[-1] = self.weights[-1] - self.learningRate * finalStep
+		if (numpy.isnan(self.weights[-1]).any()):
+			print "WEIGHTS -1 WAS NAN"
+			print "finalstep:"
+			print finalStep
+			print "Step 3:"
+			print stepThree
+			print "Step 2:"
+			print stepTwo
+			print "Step 1:"
+			print stepOne
 		
-		print "\nNew weights:"
-		print self.weights[-1]
+		#print "\nNew weights:"
+		#print self.weights[-1]
 		
 
-		print "\n\n---- Input layer weight adjustment ----"
-		stepThree = self.weights[-1]
+		#print "\n\n---- Input layer weight adjustment ----"
+		stepThree2 = self.weights[-1]
 	
-		print "(Steps 1-2 same as above)"
-		print "Step 3:"
-		print stepThree
+		#print "(Steps 1-2 same as above)"
+		#print "Step 3:"
+		#print stepThree
 		
-		stepFour = self.dSigmoidDValues(self.run_layerNodeValues[-2])
+		stepFour = self.dSigmoidDValues(self.run_layerNodeResults[-2])
 
-		print "\nStep 4"
-		print stepFour
+		#print "\nStep 4"
+		#print stepFour
 
 		stepFive = self.run_inputs
 
-		print "\nStep 5"
-		print stepFive
+		#print "\nStep 5"
+		#print stepFive
 
-		finalStep = stepFive.transpose() * numpy.asmatrix(numpy.asarray(stepFour) * numpy.asarray((numpy.asarray(stepOne) * numpy.asarray(stepTwo)) * stepThree.transpose()))
+		finalStep2 = stepFive.transpose() * numpy.asmatrix(numpy.asarray(stepFour) * numpy.asarray((numpy.asarray(stepOne) * numpy.asarray(stepTwo)) * stepThree2.transpose()))
 
-		print "\nFinal affect of weights on error:"
-		print finalStep
+		#print self.run_layerNodeValues[-2]
+		#print stepFour
+
+		#print "\nFinal affect of weights on error:"
+		#print finalStep
 
 		# apply final step to weights
-		print "\n\n"
-		print "Old weights:"
-		print self.weights[-2]
+		#print "\n\n"
+		#print "Old weights:"
+		#print self.weights[-2]
 
-		self.weights[-2] = self.weights[-2] - self.learningRate * finalStep
+		self.weights[-2] = self.weights[-2] - self.learningRate * finalStep2
+		if (numpy.isnan(self.weights[-2]).any()):
+			print "WEIGHTS -2 WAS NAN"
+			print "finalstep2:"
+			print finalStep2
+			print "Step 5:"
+			print stepFive
+			print "Step 4:"
+			print stepFour
+
+			print "\t\t\tPOTENTIAL PROBLEM?"
+			print "layerNodeValues before put into step four"
+			print self.run_layerNodeValues[-2]
+			
+			print "Step 3 (2):"
+			print stepThree2
+			print "Step 2:"
+			print stepTwo
+			print "Step 1:"
+			print stepOne
 		
-		print "\nNew weights:"
-		print self.weights[-2]
+		#print "\nNew weights:"
+		#print self.weights[-2]
+
+	
+	def train(self):
+		for i in range(0, len(self.trainingInputs)):
+			#print "Expected: " + str(self.trainingOutputs[i])
+			self.runFeedForward(self.trainingInputs[i])
+			self.backPropogate(self.trainingOutputs[i])
+			#print "Network: " + str(self.run_outputs)
+			self.calculateRunError()
+			#print "Set error: " + str(self.run_error)
+			print "Training set " + str(i) + ": " + "expected: " + str(self.trainingOutputs[i]) + " network: " + str(self.run_outputs) + " error: " + str(self.run_error)
+			if numpy.isnan(self.run_outputs):
+				print "ERROR DETECTED"
+				print self.weights
+				print self.run_inputs
+				print self.run_layerNodeValues
+				print self.run_layerNodeResults
+				print self.run_outputs
+				break;
+
+		print "finished training"
 		
 
 	# debugging/info functions
 	# (later print net node info HERE, instead of in the functions)
+	def printWeights(self):
+		for i in range(0, len(self.weights)):
+			print self.weights[i]
+			
+	def printInitialWeights(self):
+		for i in range(0, len(self.initialWeights)):
+			print self.initialWeights[i]
+
