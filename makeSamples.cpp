@@ -9,12 +9,12 @@ int main()
 {
 
 	ofstream fileStream;
-	fileStream.open("data.txt", ios::out | ios::app);
+	fileStream.open("bigdata.txt", ios::out | ios::app);
 	
 
 
 	//cout << "topology: 2 4 1" << endl;
-	for (int i = 2000; i >= 0; --i)
+	for (int i = 10000; i >= 0; --i)
 	{
 		int n1 = (int)(2.0 * rand() / double(RAND_MAX));
 		int n2 = (int)(2.0 * rand() / double(RAND_MAX));

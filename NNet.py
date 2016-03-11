@@ -22,7 +22,7 @@ class NeuralNetwork():
 	layerNeuronCount = 0
 	outputs = 0
 
-	learningRate = 2.0; # (alpha)
+	learningRate = 2; # (alpha)
 
 	# necessary training variables
 	
@@ -112,17 +112,17 @@ class NeuralNetwork():
 		
 		# input to first hidden layer (inputs x hiddenLayerNodes)
 		weights_in_hidden = numpy.random.rand(self.inputs, self.layerNeuronCount)
-		weights_in_hidden = weights_in_hidden#*2 - 1 # normalize weights (-1,1)
+		weights_in_hidden = weights_in_hidden*2 - 1 # normalize weights (-1,1)
 		self.weights.append(weights_in_hidden)
 		
 		for i in range(0,self.layers - 1): # input
 			weights_hidden_hidden = numpy.random.rand(self.layerNeuronCount, self.layerNeuronCount)
-			weights_hidden_hidden = weights_hidden_hidden#*2 - 1 # normalize weights (-1,1)
+			weights_hidden_hidden = weights_hidden_hidden*2 - 1 # normalize weights (-1,1)
 			self.weights.append(weights_hidden_hidden)
 
 		# final hidden to output layer (hiddenLayerNodes x outputs)
 		weights_hidden_out = numpy.random.rand(self.layerNeuronCount, self.outputs)
-		weights_hidden_out = weights_hidden_out#*2 - 1 # normalize weights (-1,1)
+		weights_hidden_out = weights_hidden_out*2 - 1 # normalize weights (-1,1)
 		self.weights.append(weights_hidden_out)
 
 		for i in range(0, len(self.weights)):
@@ -319,7 +319,8 @@ class NeuralNetwork():
 			#print "Network: " + str(self.run_outputs)
 			self.calculateRunError()
 			#print "Set error: " + str(self.run_error)
-			print "Training set " + str(i) + ": " + "expected: " + str(self.trainingOutputs[i]) + " network: " + str(self.run_outputs) + " error: " + str(self.run_error)
+			if (i % 100 == 0):
+				print "Training set " + str(i) + ": " + "exp: " + str(self.trainingOutputs[i]) + " net: " + str(self.run_outputs) + " err: " + str(self.run_error)
 			if numpy.isnan(self.run_outputs):
 				print "ERROR DETECTED"
 				print self.weights
@@ -329,7 +330,7 @@ class NeuralNetwork():
 				print self.run_outputs
 				break;
 
-		print "finished training"
+		print "\nFinished training!\n"
 		
 
 	# debugging/info functions
