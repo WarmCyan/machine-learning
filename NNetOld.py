@@ -22,7 +22,7 @@ class NeuralNetwork():
 	layerNeuronCount = 0
 	outputs = 0
 
-	learningRate = 2; # (alpha)
+	learningRate = 2.0; # (alpha)
 
 	# necessary training variables
 	

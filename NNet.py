@@ -51,6 +51,7 @@ class NeuralNetwork():
 		print "(Compiling theano functions...)"
 
 		# basic node value finding function (prev layer dot weights)
+		# TODO: add bias matrix parameter to be passed in as well?
 		mat_incoming = t.dmatrix('mat_incoming') # layer inputs
 		mat_weights = t.dmatrix('mat_weights') # layer connection weights
 		mat_nodeValues = t.dot(mat_incoming, mat_weights) # dot product of inputs with weights (no sigmoid yet) This is first half value of each node
