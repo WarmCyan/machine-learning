@@ -27,7 +27,8 @@ class GeneticAlgorithm:
     # dictionary contains a chromosome (array of genes) and a float fitness
 
 
-    CurrentPopulation = [ { "chromosome":['s', 'a', 'm', 'p', 'l', 'e'], "fitness":0.0 } ]
+    #CurrentPopulation = [ { "chromosome":['s', 'a', 'm', 'p', 'l', 'e'], "fitness":0.0 } ]
+    CurrentPopulation = []
     SortedPopulation = [] # fitness sorted population list
     NextPopulation = [] # buffer to build up new population in?
 
@@ -48,7 +49,7 @@ class GeneticAlgorithm:
     def PickRandomGene(self): # potentially pass this in as a function?
         pass
 
-    # Set by the wrapper. Should accept a chromsome, and should return a float fitness
+    # Set by the wrapper. Should accept a chromosome, and should return a float fitness
     def Fitness(self, chromosome):
         print("Checking fitness...")
         return 0.0
@@ -56,21 +57,22 @@ class GeneticAlgorithm:
 
 
 
-    # runs the Fitness on every chromsome in CurrentPopulation and sets its fitness
+    # runs the Fitness on every chromosome in CurrentPopulation and sets its fitness
     def EvaluatePopulation(self):
-        for chromsomeEntry in self.CurrentPopulation:
-            chromsomeEntry["fitness"] = self.Fitness(chromsomeEntry["chromosome"])
-            self.AddChromosomeEntryToSorted(chromsomeEntry)
+        self.SortedPopulation = []
+        for chromosomeEntry in self.CurrentPopulation:
+            chromosomeEntry["fitness"] = self.Fitness(chromosomeEntry["chromosome"])
+            self.AddChromosomeEntryToSorted(chromosomeEntry)
 
         # all of population evaluated and sorted in SortedPopulation, TODO: do
         # we set current to sorted or just leave it?
 
     # call this as running evaluate population, and insert wherever this
-    # new chromsome has a greater fitness then one at that location
+    # new chromosome has a greater fitness then one at that location
     def AddChromosomeEntryToSorted(self, newChromosomeEntry):
         for i in range(0, len(self.SortedPopulation)):
-            chromsomeEntry = self.SortedPopulation[i];
-            if newChromosomeEntry["fitness"] >= chromsomeEntry["fitness"]:
+            chromosomeEntry = self.SortedPopulation[i];
+            if newChromosomeEntry["fitness"] >= chromosomeEntry["fitness"]:
                 self.SortedPopulation.insert(i, newChromosomeEntry)
                 return
             
@@ -83,20 +85,23 @@ class GeneticAlgorithm:
         self.Selection()
         self.Crossover()       
         self.Mutate()
-        #self.CurrentPopulation = self.NextPopulation
+        self.CurrentPopulation = self.NextPopulation
+        self.NextPopulation = []
+        self.FillRemaining()
 
     def FillRemaining(self):
-        pass
+        while len(self.CurrentPopulation) < self.PopulationSize:
+            self.CurrentPopulation.append({"chromosome":self.GenerateRandomChromosome(), "fitness":0.0})
 
     def Selection(self):
         if self.SelectionType == "Elitism":
             for i in range(0, self.ElitismSize):
-                self.SelectedParents.append(self.SortedPopulation[i]["chromsome"])
+                self.SelectedParents.append(self.SortedPopulation[i]["chromosome"])
 
     def Crossover(self):
-        while len(SelectedParents) > 0:
-            parent1 = SelectedParents[len(SelectedParents) - 1]
-            parent2 = SelectedParents[len(SelectedParents) - 2]
+        while len(self.SelectedParents) > 2:
+            parent1 = self.SelectedParents[len(self.SelectedParents) - 1]
+            parent2 = self.SelectedParents[len(self.SelectedParents) - 2]
             
             crossoverRoll = random.random()
 
@@ -114,21 +119,34 @@ class GeneticAlgorithm:
                     len2 = len(parent2)
                     minlen = min(len1, len2)
 
-                    crossPoint = random.uniform(0, minlen)
+                    crossPoint = int(random.uniform(0, minlen))
 
                     # carry out the crossover
                     child1 = parent1[0:crossPoint]
                     child1 += parent2[crossPoint:len2]
                     child2 = parent2[0:crossPoint]
-                    child2 +=parent1[crossPoint:len1]
+                    child2 += parent1[crossPoint:len1]
 
             # remove parents and add children to new population
-            del SelectedParents[len(SelectedParents) - 1]
-            del SelectedParents[len(SelectedParents) - 2]
-            self.NextPopulation.append({"chromsome":child1, "fitness":0.0})
-            self.NextPopulation.append({"chromsome":child2, "fitness":0.0})
+            del self.SelectedParents[len(self.SelectedParents) - 1]
+            del self.SelectedParents[len(self.SelectedParents) - 2]
+            self.NextPopulation.append({"chromosome":child1, "fitness":0.0})
+            self.NextPopulation.append({"chromosome":child2, "fitness":0.0})
 
+    # randomly mutates entries in nextpopulation based on mutation probability 
     def Mutate(self):
+        for chromosome in self.NextPopulation: # TODO: better name than chromosome here
+            print(str(chromosome))
+            mutateRoll = random.random()
+
+            if mutateRoll > self.MutationProbability:
+                geneCount = len(chromosome["chromosome"])
+
+                mutateGeneIndex = int(random.uniform(0, geneCount))
+                newGene = self.PickRandomGene()
+                #print(str(newGene))
+                chromosome["chromosome"][mutateGeneIndex] = newGene
+            
         pass
 
 
@@ -138,12 +156,17 @@ class GeneticAlgorithm:
         self.ElitismSize = selectionSize
 
 
-    def RunGeneration():
+    def RunGeneration(self):
+        pass
         # generate population that doesn't exist
-        while len(CurrentPopulation) < self.PopulationSize:
-            CurrentPopulation.append({"chromsome":self.GenerateRandomChromosome(), "fitness":0.0})
+        #while len(CurrentPopulation) < self.PopulationSize:
+            #CurrentPopulation.append({"chromosome":self.GenerateRandomChromosome(), "fitness":0.0})
+        #self.FillRemaining()
+        #self.EvaluatePopulation()
+        #self.GenerateNextPopulation()
+
 
     def __init__(self, altFitness=Fitness, altPickRandomGene=PickRandomGene, altGenerateRandomChromosome=GenerateRandomChromosome):
         self.Fitness = altFitness
-        self.RandomGene = altPickRandomGene
+        self.PickRandomGene = altPickRandomGene
         self.GenerateRandomChromosome = altGenerateRandomChromosome
