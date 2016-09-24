@@ -2,6 +2,10 @@ import random
 
 class GeneticAlgorithm:
 
+
+    # TODO: save last generation
+    # TODO: minimize/maximze option?
+
     SelectionType = "StochasticUniversal" # "StochasticUniversal", "FitnessProportionate", "Tournament", "RewardBased", "Truncation", "Elitism"
     CrossoverType = "Single" # "Single","Double", "CutSplice", "Uniform"
     CrossoverProbability = 0.2
@@ -55,8 +59,6 @@ class GeneticAlgorithm:
         return 0.0
 
 
-
-
     # runs the Fitness on every chromosome in CurrentPopulation and sets its fitness
     def EvaluatePopulation(self):
         self.SortedPopulation = []
@@ -96,22 +98,31 @@ class GeneticAlgorithm:
     def Selection(self):
         if self.SelectionType == "Elitism":
             for i in range(0, self.ElitismSize):
+                #print(" SELECTING " + str(self.SortedPopulation[i]))
                 self.SelectedParents.append(self.SortedPopulation[i]["chromosome"])
 
     def Crossover(self):
-        while len(self.SelectedParents) > 2:
-            parent1 = self.SelectedParents[len(self.SelectedParents) - 1]
-            parent2 = self.SelectedParents[len(self.SelectedParents) - 2]
+        while len(self.SelectedParents) >= 1:
+            index1 = len(self.SelectedParents) - 1
+            index2 = len(self.SelectedParents) - 2
+            #parent1 = self.SelectedParents[len(self.SelectedParents) - 1]
+            #parent2 = self.SelectedParents[len(self.SelectedParents) - 2]
+            parent1 = self.SelectedParents[index1]
+            parent2 = self.SelectedParents[index2]
+
+            #print("parent1: " + str(parent1) + " " + str(index1))
+            #print("parent2: " + str(parent2) + " " + str(index2))
             
             crossoverRoll = random.random()
 
             child1 = []
             child2 = []
             
-            if crossoverRoll > self.CrossoverProbability:
+            if crossoverRoll >= self.CrossoverProbability:
                 child1 = parent1
                 child2 = parent2
             else:
+                #print("CROSSING OVER")
                 if self.CrossoverType == "Single":
                     # get two lengths, and get a random number that is less than
                     # either (minimum)
@@ -129,17 +140,23 @@ class GeneticAlgorithm:
 
             # remove parents and add children to new population
             del self.SelectedParents[len(self.SelectedParents) - 1]
-            del self.SelectedParents[len(self.SelectedParents) - 2]
+            del self.SelectedParents[len(self.SelectedParents) - 1]
             self.NextPopulation.append({"chromosome":child1, "fitness":0.0})
             self.NextPopulation.append({"chromosome":child2, "fitness":0.0})
+
+        #print("Next population: ")
+        #for chromosome in self.NextPopulation:
+            #print(str(chromosome))
+        #print("REMAINING PARENTS: " + str(len(self.SelectedParents)))
 
     # randomly mutates entries in nextpopulation based on mutation probability 
     def Mutate(self):
         for chromosome in self.NextPopulation: # TODO: better name than chromosome here
-            print(str(chromosome))
+            #print(str(chromosome))
             mutateRoll = random.random()
 
-            if mutateRoll > self.MutationProbability:
+            if mutateRoll <= self.MutationProbability:
+                #print("MUTATING")
                 geneCount = len(chromosome["chromosome"])
 
                 mutateGeneIndex = int(random.uniform(0, geneCount))
