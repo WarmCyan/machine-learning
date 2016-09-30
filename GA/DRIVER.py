@@ -27,16 +27,6 @@ def Fitness(chromosome):
     #return float(1/float(abs(goal - total)))
     return (400 - abs(goal - total))**2
 
-    
-
-alg = GA.GeneticAlgorithm(Fitness, PickRandomGene, GenerateRandomChromosome)
-#alg.CrossoverProbability = 0.0
-#alg.MutationProbability = 0.02
-alg.PopulationSize = 5000
-alg.SetElitismSelection(2500)
-alg.FillRemaining() # initial population
-alg.EvaluatePopulation()
-
 
 def printPopulation(generation):
     index = 0
@@ -55,6 +45,19 @@ def printPopulation(generation):
     print("GENERATION STATS: correct: " + str(accurate) + "")
     correctGraph.append(accurate)
         
+    
+
+alg = GA.GeneticAlgorithm(Fitness, PickRandomGene, GenerateRandomChromosome)
+#alg.CrossoverProbability = 0.0
+#alg.MutationProbability = 0.02
+alg.PopulationSize = 5000
+#alg.SetElitismSelection(2500)
+alg.SetTournamentSelection(size=20, selectionCount=2500)
+alg.FillRemaining() # initial population
+alg.EvaluatePopulation()
+printPopulation("_INITIAL_")
+
+
 
 
 for i in range(0, 200):

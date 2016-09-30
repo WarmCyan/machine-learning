@@ -6,15 +6,22 @@ class GeneticAlgorithm:
     # TODO: save last generation
     # TODO: minimize/maximze option?
 
-    SelectionType = "StochasticUniversal" # "StochasticUniversal", "FitnessProportionate", "Tournament", "RewardBased", "Truncation", "Elitism"
+    #SelectionType = "StochasticUniversal" # "StochasticUniversal", "FitnessProportionate", "Tournament", "RewardBased", "Truncation", "Elitism"
+
+    
     CrossoverType = "Single" # "Single","Double", "CutSplice", "Uniform"
     CrossoverProbability = 0.2
     MutationProbability = 0.001
 
 
     # Selection type specific variables
+    ElitismSelection = False
     ElitismSize = 500
 
+    TournamentSelection = False
+    TournamentSize = 20
+    TournamentSelectionProbability = .5
+    TournamentSelectionCount = 500
     
 
     PopulationSize = 1000
@@ -59,28 +66,31 @@ class GeneticAlgorithm:
         return 0.0
 
 
+
+
+
     # runs the Fitness on every chromosome in CurrentPopulation and sets its fitness
     def EvaluatePopulation(self):
         self.SortedPopulation = []
         for chromosomeEntry in self.CurrentPopulation:
             chromosomeEntry["fitness"] = self.Fitness(chromosomeEntry["chromosome"])
-            self.AddChromosomeEntryToSorted(chromosomeEntry)
+            self.AddChromosomeEntryToSorted(self.SortedPopulation, chromosomeEntry)
 
         # all of population evaluated and sorted in SortedPopulation, TODO: do
         # we set current to sorted or just leave it?
 
     # call this as running evaluate population, and insert wherever this
     # new chromosome has a greater fitness then one at that location
-    def AddChromosomeEntryToSorted(self, newChromosomeEntry):
-        for i in range(0, len(self.SortedPopulation)):
-            chromosomeEntry = self.SortedPopulation[i];
+    def AddChromosomeEntryToSorted(self, sortedList, newChromosomeEntry):
+        for i in range(0, len(sortedList)):
+            chromosomeEntry = sortedList[i];
             if newChromosomeEntry["fitness"] >= chromosomeEntry["fitness"]:
-                self.SortedPopulation.insert(i, newChromosomeEntry)
+                sortedList.insert(i, newChromosomeEntry)
                 return
             
         # if reached this point, list either empty, or lowest fitness score, so
         # store at end
-        self.SortedPopulation.append(newChromosomeEntry)
+        sortedList.append(newChromosomeEntry)
     
 
     def GenerateNextPopulation(self):
@@ -96,10 +106,42 @@ class GeneticAlgorithm:
             self.CurrentPopulation.append({"chromosome":self.GenerateRandomChromosome(), "fitness":0.0})
 
     def Selection(self):
-        if self.SelectionType == "Elitism":
+        #if self.SelectionType == "Elitism": # NOTE: selects only the fittest and discards the rest
+        if self.ElitismSelection: # NOTE: selects only the fittest and discards the rest
             for i in range(0, self.ElitismSize):
                 #print(" SELECTING " + str(self.SortedPopulation[i]))
                 self.SelectedParents.append(self.SortedPopulation[i]["chromosome"])
+
+        if self.TournamentSelection:
+            for i in range(0, self.TournamentSelectionCount):
+                contestants = []
+                
+                # randomly choose contestants for tournament
+                for j in range(0, self.TournamentSize):
+                    randomIndex = int(random.uniform(0, self.PopulationSize - 1))
+                    #contestants.append(self.SortedPopulation[randomIndex])
+                    self.AddChromosomeEntryToSorted(contestants, self.SortedPopulation[randomIndex])
+
+                selected = False
+                probabilityMultiplier = 1.0
+                index = 0
+                while not selected:
+                    roll = random.random()
+                    if roll < self.TournamentSelectionProbability:
+                        self.SelectedParents.append(self.SortedPopulation[index]["chromosome"])
+                        selected = True
+                        break
+                    else:
+                        probabilityMultiplier -= float(1/self.TournamentSize)
+                    index += 1
+                    if index > self.TournamentSize: 
+                        index = 0
+                        probabilityMultiplier = 1
+
+                #print("Selected tournament winner! Fitness: " + str(self.SortedPopulation[index]["fitness"]))
+                        
+                    
+                
 
     def Crossover(self):
         while len(self.SelectedParents) >= 1:
@@ -169,8 +211,15 @@ class GeneticAlgorithm:
 
     #def SetTournamentSelection(self, tournamentSize=500):
     def SetElitismSelection(self, selectionSize=500):
-        self.SelectionType = "Elitism"
+        #self.SelectionType = "Elitism"
+        self.ElitismSelection = True
         self.ElitismSize = selectionSize
+
+    def SetTournamentSelection(self, size=20, selectionProbability=.5, selectionCount = 500):
+        self.TournamentSelection = True
+        self.TournamentSize = size
+        self.TournamentSelectionProbability = selectionProbability
+        self.TournamentSelectionCount = selectionCount
 
 
     def RunGeneration(self):
