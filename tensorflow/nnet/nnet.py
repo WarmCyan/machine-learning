@@ -47,7 +47,8 @@ biases = {
     'out': tf.Variable(tf.random_normal([n_classes]))
 }
 
-# make the model now
+# make the model now. This is actually the prediction?? the function technically
+# does return the out_layer, so maybe this is the output layer?
 pred = multilayer_perceptron(x, weights, biases)
 
 cost = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(logits=pred, labels=y))
