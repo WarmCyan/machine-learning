@@ -6,7 +6,28 @@ import multiprocessing as mp
 import network
 #import Queue
 
-test = network.Network()
+class Learner:
+
+    def __init__(self):
+        pass
+
+prev_queries = []
+prev_answers = []
+
+
+# randomly select some elements from prev_queries
+def getBatch():
+    pass
+
+def background():
+    backNet = network.Network()
+
+    
+    pass
+
+
+#test = network.Network()
+
 
 #test.saveNetwork("prev")
 #print(test.feedForward([[2,3,4]]))
