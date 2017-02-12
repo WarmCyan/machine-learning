@@ -2,6 +2,7 @@ import sys, os
 import tensorflow as tf
 import random
 import curses
+import traceback
 
 import multiprocessing as mp
 
@@ -33,6 +34,7 @@ def initialize():
     io_proc = mp.Process(target=io, args=(q_fg_input, q_bg_input,q_output,q_disp,))
     bg_proc = mp.Process(target=background, args=(q_bg_input,q_output,q_disp,))
     fg_proc = mp.Process(target=foreground, args=(q_fg_input,q_output,q_disp,))
+
 
     disp_proc.start()
     io_proc.start()
@@ -73,6 +75,10 @@ def getBatch(queries, answers, size):
     #net.train(trainingSet[0], trainingSet[1])
     #return net
 
+def display(queue, msg, screen = 0, insertNewLine=True):
+    if insertNewLine: queue.put({"content":msg + "\n","loc":screen})
+    else: queue.put({"content":msg,"loc":screen})
+
 def disp(q_disp, q_output):
     stdscr = curses.initscr()
     curses.noecho()
@@ -84,16 +90,27 @@ def disp(q_disp, q_output):
     curses.start_color()
     curses.use_default_colors() 
 
+    curses.curs_set(False)
+
     util = utilities.Utilities(stdscr)
+
+    cur_input = ""
 
     running = True
     while running:
 
         # wait for input
-        util.wait()
+        key = util.waitKey()
         if util.exitTriggered:
             q_output.put({"message":"QUIT"})
             running = False
+        
+        if key != None:
+            if key == "!ENTER":
+                q_output.put({"message": "input", "data":cur_input})
+                cur_input = ""
+            else:
+                cur_input += str(key)
             
         # check display queue
         msg = None
@@ -123,11 +140,18 @@ def io(q_fg_input, q_bg_input, q_output, q_disp):
         if msg["message"] == "store query":
             queries.append(msg["query"])
             answers.append(msg["answer"])
+        elif msg["message"] == "input":
+            q_fg_input.put(msg)
         elif msg["message"] == "request batch":
             q_bg_input.put({"message": "batch response", "data": getBatch(queries, answers, 5)})
+        elif msg["message"] == "request background network":
+            q_bg_input.put(msg)
+        elif msg["message"] == "background network ready":
+            q_fg_input.put(msg)
         elif msg["message"] == "QUIT":
             q_bg_input.put(msg)
-            q_disp.put({"content":"Exiting...", "loc":0})
+            q_fg_input.put(msg)
+            display(q_disp, "!!!EXIT!!!")
             running = False
 
 
@@ -142,29 +166,75 @@ def background(q_input, q_output, q_disp):
         if obj == None:
             q_output.put({"message":"request batch"})
         elif obj["message"] == "batch response":
-            #util.print("Training...",1)
-            #q_output.put({"message":"print", "data":"Training...", "loc": 1})
-            q_disp.put({"content":"Training...\n", "loc":1})
+            display(q_disp, "Training...", 1)
+            display(q_disp, "Set:\n" + str(obj["data"][0]), 1)
+            
             backgroundNN.train(obj["data"][0], obj["data"][1])
-            #q_output.put({"message":"print", "data":"Trained a batch!", "loc": 1})
-            #util.print("Trained a batch!", 1)
-            q_disp.put({"content":"Trained a batch!\n", "loc":1})
+            
+            display(q_disp, "Trained a batch!", 1)
+        elif obj["message"] == "request background network":
+            display(q_disp, "Saving background network...")
+            backgroundNN.saveNetwork("background")
+            display(q_disp, "Saved successfully!")
+            q_output.put({"message":"background network ready"})
         elif obj["message"] == "QUIT":
-            q_disp.put({"content":"Exiting...", "loc":0})
+            display(q_disp, "Exiting...", 1)
             running = False
         
         #print("Background got " + str(obj))
         #queue.put(obj + 1)
 
 def foreground(q_input, q_output, q_disp):
-    foregroundNN = nn.Network()
-    running = True
-    #q_output.put({"message":"print", "data":"Fg rules!", "loc": 0})
-    q_disp.put({"content":"FG rules!!!", "loc": 0})
-    #while running: 
-        #cmdInput = input("> ")
-        #print("> ")
-        #cmdinput = stdin.readline()
+    try:
+        foregroundNN = nn.Network()
+        running = True
+
+        display(q_disp, "> ", 0, False)
+        while running: 
+            obj = None
+            
+            try:
+                obj = q_input.get(True, 1)
+            except: pass
+            
+            if obj == None:
+                pass
+
+            elif obj["message"] == "background network ready":
+                display(q_disp, "Loading background network...")
+                foregroundNN.loadNetwork("background")
+                display(q_disp, "Loaded background network")
+            
+            elif obj["message"] == "input":
+                display(q_disp, "Received input: " + obj["data"])
+
+                cmd = obj["data"]
+                cmd = cmd.split(" ")
+
+                if cmd[0] == "load":
+                    q_output.put({"message":"request background network"})
+                    display(q_disp, "Requesting background network...")
+                elif len(cmd) == 4:
+                    query = [int(cmd[0]), int(cmd[1]), int(cmd[2])]
+                    answer = [int(cmd[3])]
+                    q_output.put({"message": "store query", "query": query, "answer": answer})
+
+                    result = foregroundNN.feedForward([query])
+                    display(q_disp, "Network: " + str(result) + "\n> ", 0, False)
+                else:
+                    display(q_disp, "Unrecognized command!\n> ", 0, False)
+                
+            #q_output.put({"Message": "store query", "query": [int(cmdInput[0]), int(cmdInput[1]), int(cmdInput[2])], "answer": [int(cmdInput[3])]})
+                
+            elif obj["message"] == "QUIT":
+                display(q_disp, "Exiting...")
+                running = False
+                
+    except Exception as e: 
+        display(q_disp, "FAILED")
+        display(q_disp, "Error: " + str(e))
+        q_output.put({"message":"QUIT"})
+        traceback.print_exc()
         
         #cmdInput = str(cmdInput.split(" "))
         

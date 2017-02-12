@@ -1,5 +1,4 @@
 import learner
-import learner2
 import utilities
 
 from curses import wrapper
@@ -20,4 +19,4 @@ if __name__ == "__main__":
     #wrapper(main)
     #l = learner.Learner(True)
     #util = utilities.Utilities()
-    learner2.initialize()
+    learner.initialize()

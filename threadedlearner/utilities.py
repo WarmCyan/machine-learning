@@ -13,11 +13,9 @@ class Utilities:
         self.win1.idlok(1)
         self.win0.scrollok(True)
         self.win1.scrollok(True)
-        #self.win0.border()
-        #self.win1.border()
         
         # colors
-        curses.init_pair(1, curses.COLOR_GREEN, curses.COLOR_BLACK)
+        curses.init_pair(1, curses.COLOR_BLUE, curses.COLOR_BLACK)
 
     def print(self, msg, winid=0):
         if winid == 0:
@@ -27,13 +25,19 @@ class Utilities:
             self.win1.addstr(msg, curses.color_pair(1))
             self.win1.refresh()
 
-    def wait(self):
+    def waitKey(self):
         c = self.stdscr.getch()
-        #if c == curses.KEY_ENTER:
-            #return True
+        if c == curses.KEY_ENTER or c == 10 or c == 13:
+            self.print("\n", 0)
+            return "!ENTER"
         #if c == ord('q'):
         #try: self.win0.addstr(str(c))
         #except: pass
-        if c != -1: self.print(chr(c), 0)
+        
         if c == 27:
             self.exitTriggered = True
+            
+        if c != -1: 
+            self.print(chr(c), 0)
+            return chr(c)
+        return None
