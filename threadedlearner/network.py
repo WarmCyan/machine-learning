@@ -1,11 +1,11 @@
-print("(importing network...)")
+#print("(importing network...)")
 import tensorflow as tf
 
 class Network:
 
 
     def __init__(self):
-        print("initializing network...")
+        #print("initializing network...")
         self.sess = tf.InteractiveSession()
 
         self.x = tf.placeholder(tf.float32, shape=[None,3])
@@ -22,7 +22,7 @@ class Network:
         self.train_step = tf.train.GradientDescentOptimizer(.5).minimize(self.cost)
 
         self.sess.run(tf.global_variables_initializer())
-        print("Network initialized!")
+        #print("Network initialized!")
 
 
     def feedForward(self, x):
@@ -41,4 +41,4 @@ class Network:
         saver = tf.train.import_meta_graph("cache/" + filename + ".meta")
         saver.restore(self.sess, "cache/" + filename)
         
-print("(network imported)")
+#print("(network imported)")
