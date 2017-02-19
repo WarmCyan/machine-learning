@@ -143,7 +143,7 @@ def io(q_fg_input, q_bg_input, q_output, q_disp):
         elif msg["message"] == "input":
             q_fg_input.put(msg)
         elif msg["message"] == "request batch":
-            q_bg_input.put({"message": "batch response", "data": getBatch(queries, answers, 5000)})
+            q_bg_input.put({"message": "batch response", "data": getBatch(queries, answers, 50000)})
         elif msg["message"] == "request background network":
             q_bg_input.put(msg)
         elif msg["message"] == "background network ready":
@@ -242,7 +242,7 @@ def foreground(q_input, q_output, q_disp):
         display(q_disp, "FAILED")
         display(q_disp, "Error: " + str(e))
         q_output.put({"message":"QUIT"})
-        #traceback.print_exc()
+        traceback.print_exc()
         
         #cmdInput = str(cmdInput.split(" "))
         

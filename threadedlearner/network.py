@@ -21,31 +21,58 @@ class Network:
         #self.cost = tf.abs(tf.subtract(self.y_, self.y))
 
         #self.train_step = tf.train.GradientDescentOptimizer(.5).minimize(self.cost)
-
         
-        self.sess = tf.InteractiveSession()
+        self.NUM_THREADS = 1
+        
+        self.sess = tf.InteractiveSession(config=tf.ConfigProto(
+    intra_op_parallelism_threads=self.NUM_THREADS))
+        
         self.assignStructure()
+        
         self.sess.run(tf.global_variables_initializer())
 
         self.trainingRuns = 0
         self.testAccuracy = 0.0
         #print("Network initialized!")
 
-    def assignStructure(self):
+    def assignStructure(self, layer_count=10, hidden_size=5):
 
         self.x = tf.placeholder(tf.float32, shape=[None,3])
         self.y_ = tf.placeholder(tf.float32, shape=[None, 1])
 
-        self.W = tf.Variable(tf.zeros([3, 1]))
-        self.b = tf.Variable(tf.zeros([1]))
+        self.layers = []
+        self.biases = []
 
-        self.y = tf.matmul(self.x, self.W) + self.b
+        self.layer_outputs = []
+
+        prev_size = 3
+        prev_layer = self.x
+
+        for i in range(0, layer_count):
+            self.layers.append(tf.Variable(tf.zeros([prev_size, hidden_size])))
+            self.biases.append(tf.Variable(tf.zeros([hidden_size])))
+
+            self.layer_outputs.append(tf.nn.relu(tf.add(tf.matmul(prev_layer, self.layers[i]), self.biases[i])))
+            prev_layer = self.layer_outputs[i]
+            prev_size = hidden_size
+
+        self.layers.append(tf.Variable(tf.zeros([prev_size, 1])))
+        self.biases.append(tf.Variable(tf.zeros([1])))
+        self.y = tf.add(tf.matmul(prev_layer, self.layers[layer_count]), self.biases[layer_count])
+        #self.layer_outputs[layer_count] = tf.add(tf.matmul(prev_layer, self.layers[layer_count]), self.biases[layer_count])
+
+        #self.W1 = tf.Variable(tf.zeros([3, 6]))
+        #self.b1 = tf.Variable(tf.zeros([6]))
+
+        #self.W2 = tf.Variable(tf
+
+        #self.y = tf.matmul(self.x, self.W) + self.b
 
         # cost is just difference in this case
         self.cost = tf.abs(tf.subtract(self.y_, self.y))
 
         #self.train_step = tf.train.GradientDescentOptimizer(.001).minimize(self.cost)
-        self.train_step = tf.train.GradientDescentOptimizer(.001).minimize(self.cost)
+        self.train_step = tf.train.AdamOptimizer(.5).minimize(self.cost)
 
         self.test_step = tf.reduce_mean(tf.cast(tf.equal(tf.round(self.y), self.y_), tf.float32))
 
