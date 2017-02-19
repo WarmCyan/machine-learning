@@ -64,7 +64,7 @@ def getBatch(queries, answers, size):
     query_batch = []
     answers_batch = []
 
-    for i in range(batchSize):
+    for i in range(size):
         choice = random.randint(0, len(queries) - 1)
         query_batch.append(queries[choice])
         answers_batch.append(answers[choice])
@@ -143,7 +143,7 @@ def io(q_fg_input, q_bg_input, q_output, q_disp):
         elif msg["message"] == "input":
             q_fg_input.put(msg)
         elif msg["message"] == "request batch":
-            q_bg_input.put({"message": "batch response", "data": getBatch(queries, answers, 5)})
+            q_bg_input.put({"message": "batch response", "data": getBatch(queries, answers, 5000)})
         elif msg["message"] == "request background network":
             q_bg_input.put(msg)
         elif msg["message"] == "background network ready":
@@ -166,12 +166,20 @@ def background(q_input, q_output, q_disp):
         if obj == None:
             q_output.put({"message":"request batch"})
         elif obj["message"] == "batch response":
-            display(q_disp, "Training...", 1)
-            display(q_disp, "Set:\n" + str(obj["data"][0]), 1)
+            display(q_disp, "Training batch " + str(backgroundNN.trainingRuns) + "...", 1)
+            #display(q_disp, "Set:\n" + str(obj["data"][0]), 1)
+
+            divide_index = int(len(obj["data"][0])*.8)
+
+            training_x = obj["data"][0][0:divide_index]
+            training_y = obj["data"][1][0:divide_index]
+            testing_x = obj["data"][0][divide_index:]
+            testing_y = obj["data"][1][divide_index:]
             
-            backgroundNN.train(obj["data"][0], obj["data"][1])
+            backgroundNN.train(training_x, training_y)
+            backgroundNN.test(training_x, training_y)
             
-            display(q_disp, "Trained a batch!", 1)
+            display(q_disp, "Trained a batch! Accuracy: " + str(backgroundNN.testAccuracy), 1)
         elif obj["message"] == "request background network":
             display(q_disp, "Saving background network...")
             backgroundNN.saveNetwork("background")
@@ -203,7 +211,7 @@ def foreground(q_input, q_output, q_disp):
             elif obj["message"] == "background network ready":
                 display(q_disp, "Loading background network...")
                 foregroundNN.loadNetwork("background")
-                display(q_disp, "Loaded background network")
+                display(q_disp, "Loaded background network\n> ", 0, False)
             
             elif obj["message"] == "input":
                 display(q_disp, "Received input: " + obj["data"])
@@ -234,7 +242,7 @@ def foreground(q_input, q_output, q_disp):
         display(q_disp, "FAILED")
         display(q_disp, "Error: " + str(e))
         q_output.put({"message":"QUIT"})
-        traceback.print_exc()
+        #traceback.print_exc()
         
         #cmdInput = str(cmdInput.split(" "))
         
