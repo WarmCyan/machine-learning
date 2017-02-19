@@ -55,9 +55,12 @@ class Network:
         #saver.export_meta_graph("cache/" + filename + ".meta")
 
     def loadNetwork(self, filename):
-        self.sess = tf.InteractiveSession()
-        self.assignStructure()
         #tf.reset_default_graph()
+        #self.sess = tf.InteractiveSession()
+        self.sess.close()
+        self.sess = tf.InteractiveSession()
+        #self.assignStructure()
+        self.sess.run(tf.global_variables_initializer())
         saver = tf.train.import_meta_graph("cache/" + filename + ".meta")
         #self.sess = tf.InteractiveSession()
         saver.restore(self.sess, "cache/" + filename)
